@@ -56,7 +56,7 @@ class Group(db.Model):
     __tablename__ = "group"
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String, nullable=False)
-    users = db.relationship("group", secondary=association_table, back_populates='categories')
+    users = db.relationship("user", secondary=association_table, back_populates='groups')
 
     def serialize(self):
         return {
