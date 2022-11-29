@@ -89,6 +89,17 @@ def add_user_to_group(group_id):
 
 
 # -- Group Routes --
+@app.route("/users/<int:user_id>/group/", methods=["POST"])
+def assign_group(user_id):
+    """
+    Endpoint for assigning a group
+    to a user by id
+    """
+    body = json.loads(request.data)
+    user = db.assign_group(user_id, body.get("type"))
+    if user is None:
+        return failure_response("User not found!")
+    return success_response(user)
 
 
 

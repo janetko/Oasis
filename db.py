@@ -20,7 +20,7 @@ class User(db.Model):
     name = db.Column(db.String, nullable = False)
     username = db.Column(db.String, nullable = False)
     password = db.Column(db.String, nullable = False)
-    groups = db.relationship("Group", secondary = association_table, back_populates = "users")
+    groups = db.relationship("group", secondary = association_table, back_populates = "users")
 
     def __init__(self, **kwargs):
         """
@@ -52,3 +52,14 @@ class User(db.Model):
         }
 
 # -- Group Class --
+class Group(db.Model):
+    __tablename__ = "group"
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String, nullable=False)
+    users = db.relationship("group", secondary=association_table, back_populates='categories')
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "type": self.description,
+        }
