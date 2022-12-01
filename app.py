@@ -50,9 +50,6 @@ def land():
     return "Oasis"
 
 
-# -- Authentication Routes --
-
-
 # -- User Routes --
 @app.route("/users/")
 def get_users():
