@@ -3,9 +3,11 @@ from db import db
 from flask import Flask
 from db import User
 from db import Group
+from db import Post
 import json
 from flask import request
 import os
+import datetime
 
 app = Flask(__name__)
 db_filename = "cms.db"
@@ -98,6 +100,7 @@ def update_username(user_id):
     db.session.commit()
     return success_response(user.simple_serialize())
 
+# might need to change this
 @app.route("/users/<int:user_id>/password/", methods=["POST"])
 def update_password(user_id):
     """
@@ -194,10 +197,10 @@ def add_user_to_group(group_id):
     body = json.loads(request.data)
     group = Group.query.filter_by(id=group_id).first()
     if group is None:
-        return failure_response("Group does not exist.")
+        return failure_response("Group not found!")
     user = User.query.filter_by(id=(body.get("user_id"))).first()
     if user is None:
-        return failure_response("User does not exist.")
+        return failure_response("User not found!")
 
     group.users.append(user)
     user.groups.append(group)
@@ -212,14 +215,71 @@ def remove_user_from_group(group_id):
     body = json.loads(request.data)
     group = Group.query.filter_by(id=group_id).first()
     if group is None:
-        return failure_response("Group does not exist.")
+        return failure_response("Group not found!")
     user = User.query.filter_by(id=(body.get("user_id"))).first()
     if user is None:
-        return failure_response("User does not exist.")
+        return failure_response("User not found!")
     
     group.users.remove(user)
     db.session.commit()
     return success_response(group.serialize())
 
+# -- Post Routes --
+@app.route("/groups/<int:group_id>/posts/")
+def get_posts(group_id):
+    """
+    Endpoint for getting all posts in a specific group
+    """
+    group = Group.query.filter_by(id=group_id).first()
+    if group is None:
+        return failure_response("Group not found!")
+    return success_response(group.post_serialize())
+
+@app.route("/users/<int:user_id>/posts/", methods=["POST"])
+def create_post(user_id):
+    """
+    Endpoint for creating a post for a user
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    body = json.loads(request.data)
+    new_post = Post(title = body.get("title"), timestamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S%.%M"), message = body.get("message"), user_id=user_id)
+    if new_post.title is None or new_post.message is None:
+        return failure_response("Must enter title and message.", 400)
+    db.session.add(new_post)
+    user.posts.append(new_post)
+    db.session.commit()
+    return success_response(new_post.serialize(), 201)
+
+@app.route("/users/<int:user_id>/posts/<int:post_id>/")
+def get_post(user_id, post_id):
+    """
+    Endpoint for getting a user's post by id
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    post = Post.query.filter_by(id=post_id).first()
+    if post is None:
+        return failure_response("Post not found!")
+    return success_response(post.serialize())
+
+@app.route("/users/<int:user_id>/posts/<int:post_id>/", methods=["DELETE"])
+def delete_post(user_id, post_id):
+    """
+    Endpoint for deleting user's post
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found!")
+    post = Post.query.filter_by(id=post_id).first()
+    if post is None:
+        return failure_response("Post not found!")
+    db.session.delete(post)
+    db.session.commit()
+    return success_response(post.simple_serialize())
+
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
