@@ -8,6 +8,8 @@ import json
 from flask import request
 import os
 import datetime
+import users_dao
+import bcrypt
 
 app = Flask(__name__)
 db_filename = "cms.db"
@@ -27,6 +29,18 @@ def success_response(data, code=200):
 def failure_response(message, code=404):
     return json.dumps({"error":message}), code
 
+def extract_token(request):
+    """
+    Helper function that extracts the token from the header of a request
+    """
+    auth_header = request.headers.get("Authorization")
+    if auth_header is None:
+        return False, failure_response("Missing authorization header.", 400)
+    bearer_token = auth_header.replace("Bearer ", "").strip()
+    if bearer_token is None or not bearer_token:
+        return False, failure_response("Invalid authorization header.", 400)
+    return True, bearer_token
+
 # -- Landing Route __
 @app.route("/")
 def land():
@@ -34,6 +48,9 @@ def land():
     Endpoint for landing page
     """
     return "Oasis"
+
+
+# -- Authentication Routes --
 
 
 # -- User Routes --
@@ -45,18 +62,88 @@ def get_users():
     users = [user.serialize()for user in User.query.all()]
     return success_response({"users": users})
 
-@app.route("/users/", methods=["POST"])
-def create_user():
+@app.route("/users/register/", methods=["POST"])
+def register_account():
     """
-    Endpoint for creating a new user
+    Endpoint for registering a new user
+    Authentication
     """
     body = json.loads(request.data)
-    new_user = User(name = body.get("name"), username = body.get("username"), password = body.get("password"))
-    if new_user.name is None or new_user.username is None or new_user.password is None: 
-        return failure_response("Must enter name, username, and password.", 400)
-    db.session.add(new_user)
+    name = body.get("name")
+    username = body.get("username")
+    password = body.get("password")
+    if name is None or username is None or password is None:
+        return failure_response("Missing name, username or password.", 400)
+    success, user = users_dao.create_user(name, username, password)
+    if not success:
+        return failure_response("User already exists.", 400)
+    return success_response({
+        "session_token": user.session_token,
+        "session_expiration": str(user.session_expiration),
+        "update_token": user.update_token
+    })
+
+@app.route("/users/login/", methods=["POST"])
+def login():
+    """
+    Endpoint for logging in a user
+    Authentication
+    """
+    body = json.loads(request.data)
+    username = body.get("username")
+    password = body.get("password")
+
+    if username is None or password is None:
+        return failure_response("Mising username or password!", 400)
+    
+    success, user = users_dao.verify_credentials(username,password)
+
+    if not success:
+        return failure_response("Incorrect username or password.", 401)
+
+    return success_response({
+        "session_token": user.session_token,
+        "session_expiration": str(user.session_expiration),
+        "update_token": user.update_token
+    })
+
+@app.route("/users/session/", methods=["POST"])
+def update_session():
+    """
+    Endpoint for updating a user's session
+    Authentication
+    """
+    success, update_token = extract_token(request)
+    if not success:
+        return failure_response("Could not extract session token", 400)
+    success_user, user = users_dao.renew_session(update_token)
+    if not success_user:
+        return failure_response("Invalid update token", 400)
+    return success_response({
+        "session_token": user.session_token,
+        "session_expiration": str(user.session_expiration),
+        "update_token": user.update_token
+    })
+
+@app.route("/users/logout/", methods=["POST"])
+def logout():
+    """
+    Endpoint for logging out a user
+    """
+    success, session_token = extract_token(request)
+
+    if not success:
+        return failure_response("Could not extract session token", 400)
+    user = users_dao.get_user_by_session_token(session_token)
+    if user is None or not user.verify_session_token(session_token):
+        return failure_response("Invalid session token", 400)
+
+    user.session_token = ""
+    user.session_expiration = datetime.datetime.now()
+    user.update_token = ""
     db.session.commit()
-    return success_response(new_user.serialize(), 201)
+
+    return success_response({"message": "You have successfully logged out."})
 
 @app.route("/users/<int:user_id>/")
 def get_user(user_id):
@@ -71,8 +158,15 @@ def get_user(user_id):
 @app.route("/users/<int:user_id>/name/", methods=["POST"])
 def update_name(user_id):
     """
-    Endpoint for updating a user's name
+    Endpoint for updating a user's name 
+    Authentication: Verifies session token and returns confirmation message
     """
+    success, session_token = extract_token(request)
+    if not success:
+        return failure_response("Session token invalid", 400)
+    user = users_dao.get_user_by_session_token(session_token)
+    if user is None or not user.verify_session_token(session_token):
+        return failure_response("Invalid session token", 400)
     body = json.loads(request.data)
     user = User.query.filter_by(id=user_id).first()
     if user is None:
@@ -82,13 +176,22 @@ def update_name(user_id):
         return failure_response("Must enter new name.", 400)
     user.name = new_name
     db.session.commit()
-    return success_response(user.simple_serialize())
+    return success_response({"message": "You have successfully updated your name!"})
+
+
 
 @app.route("/users/<int:user_id>/username/", methods=["POST"])
 def update_username(user_id):
     """
     Endpoint for updating username
+    Authentication: Verifies session token and returns confirmation message
     """
+    success, session_token = extract_token(request)
+    if not success:
+        return failure_response("Session token invalid", 400)
+    user = users_dao.get_user_by_session_token(session_token)
+    if user is None or not user.verify_session_token(session_token):
+        return failure_response("Invalid session token", 400)
     body = json.loads(request.data)
     user = User.query.filter_by(id=user_id).first()
     if user is None:
@@ -98,14 +201,21 @@ def update_username(user_id):
         return failure_response("Must enter new username.", 400)
     user.username = new_username
     db.session.commit()
-    return success_response(user.simple_serialize())
+    return success_response({"message": "You have successfully updated your username!"})
 
 # might need to change this
 @app.route("/users/<int:user_id>/password/", methods=["POST"])
 def update_password(user_id):
     """
     Endpoint for updating password
+    Authentication: Verifies session token and returns confirmation message
     """
+    success, session_token = extract_token(request)
+    if not success:
+        return failure_response("Session token invalid", 400)
+    user = users_dao.get_user_by_session_token(session_token)
+    if user is None or not user.verify_session_token(session_token):
+        return failure_response("Invalid session token", 400)
     body = json.loads(request.data)
     user = User.query.filter_by(id=user_id).first()
     if user is None:
@@ -113,9 +223,9 @@ def update_password(user_id):
     new_password = body.get("password")
     if new_password is None:
         return failure_response("Must enter new password.", 400)
-    user.password = new_password
+    user.password_digest = bcrypt.hashpw(new_password.encode("utf8"), bcrypt.gensalt(rounds=13))
     db.session.commit()
-    return success_response(user.simple_serialize()) # might wannt replace with text
+    return success_response({"message": "You have successfully updated your password!"})
 
 @app.route("/users/<int:user_id>/", methods=["DELETE"])
 def delete_user(user_id):
@@ -219,7 +329,6 @@ def remove_user_from_group(group_id):
     user = User.query.filter_by(id=(body.get("user_id"))).first()
     if user is None:
         return failure_response("User not found!")
-    
     group.users.remove(user)
     db.session.commit()
     return success_response(group.serialize())
