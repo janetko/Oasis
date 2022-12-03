@@ -97,13 +97,14 @@ class LoginViewController: UIViewController {
             if (response != nil) {
                 found = true
             }
-            if (!found) {
-                self.noUser.isHidden = false
-                return
-            }
-            
-            self.present(MoodTrackerViewController(), animated: false)
         }
+        
+        if (!found) {
+            noUser.isHidden = false
+            return
+        }
+        
+        present(MoodTrackerViewController(), animated: false)
     }
     
 }
