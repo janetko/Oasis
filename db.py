@@ -80,6 +80,19 @@ class User(db.Model):
         """
         return update_token == self.update_token
 
+    def pass_serialize(self):
+        """
+        Serializes a User object with password
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "username": self.username,
+            "password": str(self.password_digest),
+            "groups": [g.simple_serialize() for g in self.groups],
+            "posts": [p.simple_serialize() for p in self.posts]
+        }
+
     def serialize(self):
         """
         Serializes a User object

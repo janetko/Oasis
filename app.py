@@ -56,7 +56,7 @@ def get_users():
     """
     Endpoint for getting all users
     """
-    users = [user.serialize()for user in User.query.all()]
+    users = [user.pass_serialize()for user in User.query.all()]
     return success_response({"users": users})
 
 @app.route("/users/register/", methods=["POST"])
@@ -350,7 +350,7 @@ def create_post(user_id):
     if user is None:
         return failure_response("User not found!")
     body = json.loads(request.data)
-    new_post = Post(title = body.get("title"), timestamp = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S%.%M"), message = body.get("message"), user_id=user_id)
+    new_post = Post(title = body.get("title"), timestamp = datetime.datetime.now(), message = body.get("message"), user_id=user_id)
     if new_post.title is None or new_post.message is None:
         return failure_response("Must enter title and message.", 400)
     db.session.add(new_post)
