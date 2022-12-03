@@ -2,7 +2,7 @@ App name: Oasis
 
 App Tagline: "a community that cares." Mental Health App (Appdev Fall '22 Hack Challenge)
 
-Link(s) to other repos: IOS repo in main
+Link(s) to other repos: IOS repo in main branch
 
 Some screenshots of your app (highlight important features):...
 
