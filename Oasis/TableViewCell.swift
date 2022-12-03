@@ -15,7 +15,7 @@ class TableViewCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
-        memoImageView.image = UIImage(named: "BearHat")
+        memoImageView.image = UIImage(named: "BearMemo")
         memoImageView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(memoImageView)
         
