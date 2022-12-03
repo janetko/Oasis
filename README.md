@@ -15,6 +15,10 @@ The main page of the app, where the user may create an account or login with an 
 
 The memos screen, where the user can click on the icon for a editing window to appear.
 
+<img width="331" alt="Screen Shot 2022-12-02 at 11 53 24 PM" src="https://user-images.githubusercontent.com/91486305/205424293-aebc059f-43fa-4f58-b620-ccd3b56636bd.png">
+
+The editing window, where the user can write down what they would like and have it appear in their memos screen.
+
 A short description of your app (its purpose and features)
 Oasis is a mental health app with full functionality for user authentication. It contains a memos page where the user may write down anything they wish, from how they are currently doing to future plans, etc.
 A list of how your app addresses each of the requirements
