@@ -3,10 +3,19 @@ Mental Health App (Appdev Fall '22 Hack Challenge)
 
 App Name: Oasis
 
-App Tagline: Oasis
-Link(s) to any other public GitHub repo(s) of your app. If you have one repo for iOS / Android and one for Backend, please link to your backend repo in your iOS / Android README, and your iOS / Android repo in your backend README.
+App Tagline: "a community that cares." Mental Health App (Appdev Fall '22 Hack Challenge)
+
 Some screenshots of your app (highlight important features)
+
 A short description of your app (its purpose and features)
+Oasis is a mental health app with full functionality for user authentication. It contains a memos page where the user may write down anything they wish, from how they are currently doing to future plans, etc.
+
 A list of how your app addresses each of the requirements
-Anything else you want your grader to know
-Note: The link, screenshots, and description will be used for the Hack Challenge website where we will showcase everyone’s final projects
+SwiftUI or AutoLayout using NSLayoutConstraint or SnapKit (no storyboards)
+Fully functional UI with AutoLayout
+At least one UICollectionView, UITableView, or List (SwiftUI) 
+UITableView on the Memos page
+Some form of navigation to navigate between screens—push, present etc.
+Navigation displays the user authentication pages along with the individual table cell editing screens.
+Integrate with your Backend’s API - this API must provide some meaningful value to your app.
+User authentication pushes to the Backend's API when creating a user and references the Backend's API during the login process.
